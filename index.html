@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A-mail — Secure Document Delivery</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:#f5f3ee;color:#1a1a16;font-family:'DM Sans',sans-serif;}
+:root{
+  --ink:#1a1a16;--paper:#f5f3ee;--cream:#ece9e0;--gold:#c9921a;--gold-light:#f0c060;
+  --red:#c0392b;--green:#1a6b3a;--blue:#1a3a6b;
+  --border:#d4d0c4;--mono:'DM Mono',monospace;
+}
+
+/* API MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,26,22,0.85);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);}
+.modal{background:var(--paper);border:2px solid var(--ink);max-width:480px;width:90%;padding:2.5rem;}
+.modal-logo{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--ink);letter-spacing:2px;margin-bottom:4px;}
+.modal-sub{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:#888;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;}
+.modal h3{font-size:15px;font-weight:500;margin-bottom:6px;}
+.modal p{font-size:12px;color:#666;line-height:1.6;margin-bottom:1.5rem;}
+.modal label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;margin-bottom:6px;}
+.modal input[type=text]{width:100%;padding:12px 14px;border:1.5px solid var(--border);background:white;font-family:var(--mono);font-size:13px;color:var(--ink);outline:none;transition:border-color 0.2s;}
+.modal input[type=text]:focus{border-color:var(--ink);}
+.modal-btn{width:100%;margin-top:12px;padding:14px;background:var(--ink);color:var(--paper);border:none;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;transition:background 0.15s;}
+.modal-btn:hover{background:#333;}
+.modal-note{font-size:11px;color:#888;text-align:center;margin-top:10px;}
+.modal-note a{color:var(--gold);text-decoration:none;}
+
+/* HEADER */
+header{background:var(--ink);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:3px solid var(--gold);}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--paper);letter-spacing:3px;}
+.logo span{color:var(--gold);}
+.header-right{display:flex;align-items:center;gap:16px;}
+.header-tag{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;}
+.online-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,0.2);}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--ink);background:var(--cream);}
+.tab{padding:14px 28px;font-size:11px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;border:none;background:transparent;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+.tab:hover{color:var(--ink);background:rgba(26,26,22,0.04);}
+.tab.active{color:var(--ink);border-bottom-color:var(--gold);font-weight:500;}
+
+/* LAYOUT */
+.page{max-width:860px;margin:0 auto;padding:28px 24px;}
+.view{display:none;}.view.active{display:block;}
+
+/* COMPANY PORTAL */
+.section-header{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;}
+.section-sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#888;}
+
+.upload-zone{border:2px dashed var(--border);padding:36px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;background:white;}
+.upload-zone:hover{border-color:var(--ink);background:var(--cream);}
+.upload-icon{font-size:32px;margin-bottom:10px;}
+.upload-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:4px;}
+.upload-sub{font-size:12px;color:#888;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;}
+.field input,.field select{padding:10px 12px;border:1.5px solid var(--border);background:white;font-size:13px;color:var(--ink);font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;}
+.field input:focus,.field select:focus{border-color:var(--ink);}
+
+.send-btn{width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:background 0.15s;margin-top:4px;}
+.send-btn:hover{background:#333;}
+
+/* TOKEN RESULT */
+.token-result{display:none;border:2px solid var(--ink);margin-top:20px;background:white;}
+.token-result.show{display:block;}
+.token-result-header{background:var(--ink);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
+.token-result-title{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--paper);letter-spacing:1px;}
+.status-pill{padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:500;}
+.pill-sent{background:rgba(201,146,26,0.2);color:var(--gold-light);}
+.pill-opened{background:rgba(74,222,128,0.2);color:#4ade80;}
+.pill-expired{background:rgba(192,57,43,0.2);color:#ff8a80;}
+.token-body{padding:20px;}
+.token-big{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:16px;color:var(--ink);text-align:center;padding:16px;background:var(--cream);margin-bottom:16px;border:1px solid var(--border);}
+.token-caption{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#888;text-align:center;margin-top:-10px;margin-bottom:16px;}
+.meta-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);}
+.meta-cell{padding:12px;text-align:center;border-right:1px solid var(--border);}
+.meta-cell:last-child{border-right:none;}
+.meta-val{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;}
+.meta-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#888;margin-top:2px;}
+.expiry-bar{height:4px;background:var(--cream);margin-top:14px;overflow:hidden;border:1px solid var(--border);}
+.expiry-fill{height:100%;background:var(--gold);transition:width 0.5s linear;}
+
+/* RECIPIENT VIEW */
+.notif-card{background:white;border:2px solid var(--ink);padding:20px;margin-bottom:16px;}
+.notif-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;}
+.notif-avatar{width:44px;height:44px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);flex-shrink:0;}
+.notif-from{font-size:14px;font-weight:500;}
+.notif-msg{font-size:12px;color:#666;margin-top:3px;line-height:1.5;}
+.notif-time{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-top:2px;}
+
+.token-entry{display:flex;gap:8px;margin-bottom:10px;}
+.token-field{flex:1;padding:14px;border:2px solid var(--border);font-family:var(--mono);font-size:24px;letter-spacing:10px;text-align:center;text-transform:uppercase;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.2s;}
+.token-field:focus{border-color:var(--ink);}
+.unlock-btn{padding:14px 24px;background:var(--gold);color:var(--ink);border:none;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+.unlock-btn:hover{background:var(--gold-light);}
+.err-msg{font-size:12px;color:var(--red);text-align:center;padding:6px;display:none;}
+.err-msg.show{display:block;}
+
+/* DOCUMENT VIEW */
+.doc-revealed{display:none;border:2px solid var(--ink);margin-top:16px;}
+.doc-revealed.show{display:block;}
+.doc-top-bar{background:var(--ink);padding:14px 20px;display:flex;align-items:center;gap:14px;}
+.doc-sender-mark{width:38px;height:38px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--ink);}
+.doc-sender-name{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--paper);letter-spacing:1px;}
+.doc-sender-type{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.5px;}
+.verified-tag{margin-left:auto;display:flex;align-items:center;gap:5px;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);padding:5px 12px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#4ade80;}
+.doc-inner{padding:20px;background:white;}
+
+.ai-block{background:#f0f7ff;border-left:4px solid var(--blue);padding:14px 16px;margin-bottom:16px;}
+.ai-block-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--blue);font-weight:500;margin-bottom:6px;}
+.ai-block-text{font-size:13px;line-height:1.65;color:var(--ink);}
+.ai-loading{display:flex;align-items:center;gap:8px;font-size:12px;color:#888;font-style:italic;}
+.ai-dot{width:5px;height:5px;border-radius:50%;background:var(--blue);animation:blink 1s infinite;}
+.ai-dot:nth-child(2){animation-delay:0.2s;}
+.ai-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes blink{0%,80%,100%{opacity:0.2}40%{opacity:1}}
+
+.actions-block{margin-bottom:16px;}
+.actions-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#888;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.action-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0ede6;}
+.action-row:last-child{border-bottom:none;}
+.action-num{font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--gold);min-width:18px;}
+.action-txt{font-size:13px;line-height:1.5;}
+
+.doc-letter{font-size:13px;line-height:1.8;color:#444;border-top:2px solid var(--ink);padding-top:16px;white-space:pre-line;}
+.doc-footer-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--cream);border-top:1px solid var(--border);}
+.doc-footer-left{font-size:10px;color:#888;font-family:var(--mono);}
+.doc-footer-right{font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px;}
+
+/* AUDIT */
+.audit-header{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:16px;}
+.audit-table{width:100%;border-collapse:collapse;background:white;border:2px solid var(--ink);}
+.audit-table th{background:var(--ink);color:var(--paper);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;padding:10px 14px;text-align:left;font-weight:400;}
+.audit-table td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.audit-table tr:last-child td{border-bottom:none;}
+.audit-table tr:hover td{background:var(--cream);}
+.ev-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+.ev-green{background:var(--green);}
+.ev-blue{background:var(--blue);}
+.ev-red{background:var(--red);}
+.ev-gold{background:var(--gold);}
+.mono-sm{font-family:var(--mono);font-size:11px;color:#888;}
+.empty-audit{padding:32px;text-align:center;font-size:13px;color:#aaa;font-style:italic;background:white;border:2px solid var(--border);}
+</style>
+</head>
+<body>
+
+<!-- API MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-logo">A<span style="color:var(--gold)">-</span>mail</div>
+    <div class="modal-sub">Secure Document Delivery Platform</div>
+    <h3>Enter your Anthropic API key</h3>
+    <p>A-mail uses AI to instantly summarize sensitive documents when recipients open them — replacing 7-10 day physical delivery with instant, secure, token-protected access.</p>
+    <label>Anthropic API Key</label>
+    <input type="text" id="apiKeyInput" placeholder="sk-ant-..." onkeydown="if(event.key==='Enter')saveKey()"/>
+    <button class="modal-btn" onclick="saveKey()">Activate A-mail →</button>
+    <p class="modal-note">Get a free key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> · Stored in browser only · Never sent anywhere except Anthropic</p>
+  </div>
+</div>
+
+<header>
+  <div class="logo">A<span>-</span>mail</div>
+  <div class="header-right">
+    <span class="header-tag">Secure Document Delivery</span>
+    <div class="online-dot"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('company',this)">Company Portal</button>
+  <button class="tab" onclick="switchTab('recipient',this)">Recipient Access</button>
+  <button class="tab" onclick="switchTab('audit',this)">Audit Trail</button>
+</div>
+
+<div class="page">
+
+  <!-- COMPANY PORTAL -->
+  <div class="view active" id="view-company">
+    <div class="section-header">
+      <div class="section-title">Send Secure Document</div>
+      <div class="section-sub">Replaces 7–10 day physical mail · Instant delivery</div>
+    </div>
+
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">Upload Document</div>
+      <div class="upload-sub" id="uploadSub">Bank statements · Insurance notices · Legal letters · Medical records · Tax documents</div>
+      <input type="file" id="fileInput" style="display:none" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this)"/>
+    </div>
+
+    <div class="form-grid">
+      <div class="field">
+        <label>Recipient full name</label>
+        <input type="text" id="recipName" placeholder="John Smith" value="Marcus Williams"/>
+      </div>
+      <div class="field">
+        <label>Recipient email</label>
+        <input type="text" id="recipEmail" placeholder="john@email.com" value="marcus@email.com"/>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Document type</label>
+        <select id="docType">
+          <option>Bank statement</option>
+          <option>Insurance notice</option>
+          <option>Legal letter</option>
+          <option>Medical record</option>
+          <option>Tax document</option>
+          <option>Mortgage document</option>
+          <option>Court notice</option>
+          <option>Benefits notice</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Token expires in</label>
+        <select id="expiry">
+          <option>24 hours</option>
+          <option selected>72 hours</option>
+          <option>7 days</option>
+          <option>30 days</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>Document summary (for AI to use)</label>
+      <input type="text" id="docSummaryHint" placeholder="e.g. October bank statement showing balance, transactions, and payment due date"/>
+    </div>
+
+    <button class="send-btn" onclick="sendDocument()">Generate Token & Send Secure Delivery →</button>
+
+    <div class="token-result" id="tokenResult">
+      <div class="token-result-header">
+        <div class="token-result-title" id="tokenResultTitle">Document Sent</div>
+        <span class="status-pill pill-sent" id="tokenStatusPill">Awaiting Access</span>
+      </div>
+      <div class="token-body">
+        <div class="token-big" id="tokenBig">——————</div>
+        <div class="token-caption">One-time access token · Single use · Auto-expires</div>
+        <div class="meta-strip">
+          <div class="meta-cell"><div class="meta-val" id="metaRecip">—</div><div class="meta-lbl">Recipient</div></div>
+          <div class="meta-cell"><div class="meta-val" id="metaExpiry">—</div><div class="meta-lbl">Expires</div></div>
+          <div class="meta-cell"><div class="meta-val" id="metaDoc">—</div><div class="meta-lbl">Doc type</div></div>
+        </div>
+        <div class="expiry-bar"><div class="expiry-fill" id="expiryFill" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECIPIENT VIEW -->
+  <div class="view" id="view-recipient">
+    <div class="section-header">
+      <div class="section-title">Access Your Document</div>
+      <div class="section-sub">Enter the token from your notification</div>
+    </div>
+
+    <div class="notif-card">
+      <div class="notif-top">
+        <div class="notif-avatar" id="notifAvatar">AM</div>
+        <div>
+          <div class="notif-from" id="notifFrom">A-mail Secure Delivery</div>
+          <div class="notif-msg">You have a sensitive document waiting for you. Enter your secure access token below to view it instantly. This replaces physical mail delivery — no waiting 7–10 days.</div>
+          <div class="notif-time" id="notifTime">Just now · Token valid for 72 hours</div>
+        </div>
+      </div>
+      <div class="token-entry">
+        <input class="token-field" type="text" id="tokenInput" placeholder="XXXXXX" maxlength="6"/>
+        <button class="unlock-btn" onclick="tryUnlock()">Unlock →</button>
+      </div>
+      <div class="err-msg" id="errMsg">Invalid or expired token. Please check and try again.</div>
+      <p style="font-size:11px;color:#aaa;text-align:center;">Token is single-use · Expires after opening · Audit-logged</p>
+    </div>
+
+    <div class="doc-revealed" id="docRevealed">
+      <div class="doc-top-bar">
+        <div class="doc-sender-mark" id="docSenderMark">?</div>
+        <div>
+          <div class="doc-sender-name" id="docSenderName">Sender</div>
+          <div class="doc-sender-type" id="docSenderType">Document type</div>
+        </div>
+        <div class="verified-tag">✓ Identity Verified · Secure Delivery</div>
+      </div>
+      <div class="doc-inner">
+        <div class="ai-block" id="aiBlock">
+          <div class="ai-block-label">A-mail AI Summary</div>
+          <div class="ai-block-text" id="aiBlockText">
+            <div class="ai-loading">
+              <div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>
+              <span>AI is reading and summarizing your document...</span>
+            </div>
+          </div>
+        </div>
+        <div class="actions-block" id="actionsBlock" style="display:none">
+          <div class="actions-label">Action Items</div>
+          <div id="actionsList"></div>
+        </div>
+        <div class="doc-letter" id="docLetter"></div>
+      </div>
+      <div class="doc-footer-bar">
+        <div class="doc-footer-left">Token: <span id="usedTokenDisplay">—</span> · Used once · Now expired</div>
+        <div class="doc-footer-right">✓ Delivery Confirmed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT TRAIL -->
+  <div class="view" id="view-audit">
+    <div class="audit-header">Delivery Audit Trail</div>
+    <div id="auditContainer">
+      <div class="empty-audit">No deliveries yet — send a document from the Company Portal to see audit events here.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let apiKey = '';
+let currentToken = '';
+let currentDoc = {};
+let auditLog = [];
+let expiryTimer = null;
+
+function saveKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-')) { alert('Please enter a valid Anthropic API key (starts with sk-ant-...)'); return; }
+  apiKey = val;
+  document.getElementById('modalOverlay').style.display = 'none';
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+function handleFile(input) {
+  if (input.files[0]) {
+    document.getElementById('uploadSub').textContent = '✓ ' + input.files[0].name + ' ready to send';
+  }
+}
+
+function genToken() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let t = '';
+  for (let i = 0; i < 6; i++) t += chars[Math.floor(Math.random() * chars.length)];
+  return t;
+}
+
+function getSender(docType) {
+  const map = {
+    'Bank statement': { name: 'Chase Bank', mark: 'CB' },
+    'Insurance notice': { name: 'Allstate Insurance', mark: 'AI' },
+    'Legal letter': { name: 'Smith & Associates', mark: 'SA' },
+    'Medical record': { name: 'Providence Health', mark: 'PH' },
+    'Tax document': { name: 'ADP Payroll Services', mark: 'AP' },
+    'Mortgage document': { name: 'Wells Fargo Home', mark: 'WF' },
+    'Court notice': { name: 'Superior Court', mark: 'SC' },
+    'Benefits notice': { name: 'Benefits Administration', mark: 'BA' },
+  };
+  return map[docType] || { name: 'A-mail Sender', mark: 'AM' };
+}
+
+function getDocContent(docType, name) {
+  const contents = {
+    'Bank statement': `Dear ${name},\n\nPlease find your October 2024 account statement attached.\n\nAccount Summary:\n  Current Balance:     $4,284.50\n  Credit Limit:        $15,000.00\n  Available Credit:    $10,715.50\n  Minimum Payment Due: $85.00\n  Payment Due Date:    November 15, 2024\n\nThis document was delivered instantly via A-mail Secure Delivery — eliminating the traditional 7–10 business day postal wait.\n\nIf you have questions, contact us at 1-800-555-0100.\n\nSincerely,\nChase Bank Customer Services`,
+    'Insurance notice': `Dear ${name},\n\nYour homeowners insurance policy #HO-44821 is due for renewal on December 1, 2024.\n\nRenewal Summary:\n  Current Premium:     $180/month\n  Renewed Premium:     $187/month (+4.2%)\n  Coverage Limit:      $350,000\n  Deductible:         $1,500\n  Policy Period:       Dec 1, 2024 – Dec 1, 2025\n\nYour coverage remains unchanged. The premium increase reflects regional claims adjustment.\n\nDelivered securely via A-mail — no physical mail required.\n\nAllstate Insurance`,
+    'Legal letter': `Dear ${name},\n\nRe: Settlement Agreement — Case #2024-CV-08821\n\nThis letter confirms that both parties have agreed to the terms of settlement as outlined in the Agreement dated October 15, 2024.\n\nSettlement Terms:\n  Settlement Amount:   $12,500.00\n  Payment Method:     Wire transfer\n  Payment Deadline:   November 30, 2024\n  Required Action:    Sign and return Release Form\n\nTo receive payment, please sign the enclosed Release Form and return it no later than November 30, 2024.\n\nSmith & Associates Law Group`,
+    'Medical record': `Dear ${name},\n\nLab Results — Visit Date: October 18, 2024\n\nResults Summary:\n  Complete Blood Count:    Within normal range\n  Basic Metabolic Panel:   Within normal range\n  Total Cholesterol:       215 mg/dL (Borderline High)\n  LDL Cholesterol:         138 mg/dL\n  Blood Pressure:          128/82 mmHg\n  Blood Glucose (fasting): 94 mg/dL\n\nRecommendation: Dietary modifications advised to address borderline cholesterol. Follow-up appointment in 6 months.\n\nProvidence Health Medical Center`,
+    'Tax document': `Dear ${name},\n\n2024 W-2 Wage and Tax Statement\n\n  Employer:                    Acme Corporation\n  Employer EIN:               12-3456789\n  Gross Wages:                $87,400.00\n  Federal Income Tax Withheld: $14,820.00\n  Social Security Tax:         $5,418.80\n  Medicare Tax:                $1,267.30\n  State Income Tax:            $6,118.00\n  State:                       CA\n\nThis document is required for your 2024 federal and state tax returns. Filing deadline: April 15, 2025.\n\nADP Payroll Services`,
+    'Mortgage document': `Dear ${name},\n\nNovember 2024 Mortgage Statement\n\n  Loan Number:         ML-928341\n  Payment Due:         November 1, 2024\n  Amount Due:          $2,847.00\n  Principal Balance:   $284,320.15\n\nPayment Breakdown:\n  Principal:           $907.00\n  Interest:            $1,940.00\n  Escrow:             $0.00\n\n  Escrow Surplus:      $240.00 (applied to next payment)\n\nWells Fargo Home Mortgage`,
+    'Court notice': `Dear ${name},\n\nCase Number: 2024-SC-14429\nHearing Date: December 5, 2024 at 9:00 AM\nCourtroom:    Room 4B, Superior Court\nAddress:      123 Justice Ave, Los Angeles, CA\n\nYou are required to appear at the above hearing. Failure to appear may result in a default judgment against you.\n\nBringing this notice and a valid photo ID is required for entry.\n\nSuperior Court of California`,
+    'Benefits notice': `Dear ${name},\n\nOpen Enrollment Period: November 1 – November 30, 2024\n\nYour 2025 benefits elections must be submitted by November 30, 2024.\n\n  Medical Plan:        Blue Shield PPO (current)\n  Dental:              Delta Dental (current)\n  Vision:              VSP (current)\n  FSA Contribution:    $2,400/year (current)\n\nIf no changes are made, your current elections will roll over. Review your options at benefits.company.com.\n\nBenefits Administration`,
+  };
+  return contents[docType] || `Dear ${name},\n\nYour document is available via A-mail Secure Delivery.\n\nPlease review the contents carefully and take any required action promptly.\n\nA-mail Secure Delivery`;
+}
+
+function addAudit(event, type, ip) {
+  auditLog.unshift({ event, type, ip, time: new Date().toLocaleTimeString(), date: new Date().toLocaleDateString() });
+  renderAudit();
+}
+
+function renderAudit() {
+  const container = document.getElementById('auditContainer');
+  if (auditLog.length === 0) {
+    container.innerHTML = '<div class="empty-audit">No deliveries yet.</div>';
+    return;
+  }
+  const colorMap = { green: 'ev-green', blue: 'ev-blue', red: 'ev-red', gold: 'ev-gold' };
+  container.innerHTML = `<table class="audit-table">
+    <thead><tr><th>Event</th><th>Time</th><th>IP Address</th></tr></thead>
+    <tbody>
+      ${auditLog.map(e => `<tr>
+        <td><span class="ev-dot ${colorMap[e.type] || 'ev-gold'}"></span>${e.event}</td>
+        <td class="mono-sm">${e.date} ${e.time}</td>
+        <td class="mono-sm">${e.ip}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function sendDocument() {
+  const name = document.getElementById('recipName').value.trim() || 'Recipient';
+  const email = document.getElementById('recipEmail').value.trim() || 'recipient@email.com';
+  const docType = document.getElementById('docType').value;
+  const expiry = document.getElementById('expiry').value;
+  const hint = document.getElementById('docSummaryHint').value.trim();
+
+  currentToken = genToken();
+  currentDoc = { name, email, docType, expiry, hint };
+
+  const sender = getSender(docType);
+  document.getElementById('tokenBig').textContent = currentToken;
+  document.getElementById('tokenResultTitle').textContent = `${docType} sent to ${name}`;
+  document.getElementById('tokenStatusPill').textContent = 'Awaiting Access';
+  document.getElementById('tokenStatusPill').className = 'status-pill pill-sent';
+  document.getElementById('metaRecip').textContent = name.split(' ')[0];
+  document.getElementById('metaExpiry').textContent = expiry.replace(' hours','h').replace(' days','d');
+  document.getElementById('metaDoc').textContent = docType.split(' ')[0];
+  document.getElementById('tokenResult').className = 'token-result show';
+
+  document.getElementById('notifAvatar').textContent = sender.mark;
+  document.getElementById('notifFrom').textContent = sender.name + ' via A-mail';
+  document.getElementById('notifTime').textContent = 'Just now · Token valid for ' + expiry;
+
+  clearInterval(expiryTimer);
+  let pct = 100;
+  document.getElementById('expiryFill').style.width = '100%';
+  expiryTimer = setInterval(() => {
+    pct -= 0.3;
+    if (pct <= 0) { clearInterval(expiryTimer); pct = 0; }
+    document.getElementById('expiryFill').style.width = pct + '%';
+  }, 200);
+
+  addAudit(`Token ${currentToken} generated — ${docType} for ${name}`, 'gold', '10.0.0.1');
+  addAudit(`Secure notification dispatched to ${email}`, 'blue', 'smtp.amail.io');
+}
+
+async function tryUnlock() {
+  const input = document.getElementById('tokenInput').value.toUpperCase().trim();
+  const errEl = document.getElementById('errMsg');
+
+  if (!currentToken) {
+    errEl.textContent = 'No document sent yet. Go to Company Portal first.';
+    errEl.className = 'err-msg show';
+    setTimeout(() => errEl.className = 'err-msg', 3000);
+    return;
+  }
+  if (input !== currentToken) {
+    errEl.textContent = 'Invalid or expired token. Please check and try again.';
+    errEl.className = 'err-msg show';
+    addAudit(`Failed access attempt — token "${input}" rejected`, 'red', '98.142.33.21');
+    setTimeout(() => errEl.className = 'err-msg', 3000);
+    return;
+  }
+
+  errEl.className = 'err-msg';
+  const sender = getSender(currentDoc.docType);
+  const docContent = getDocContent(currentDoc.docType, currentDoc.name);
+
+  document.getElementById('docSenderMark').textContent = sender.mark;
+  document.getElementById('docSenderName').textContent = sender.name;
+  document.getElementById('docSenderType').textContent = currentDoc.docType + ' · Delivered via A-mail';
+  document.getElementById('docLetter').textContent = docContent;
+  document.getElementById('usedTokenDisplay').textContent = currentToken;
+  document.getElementById('docRevealed').className = 'doc-revealed show';
+
+  document.getElementById('aiBlockText').innerHTML = `<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>AI is reading and summarizing your document...</span></div>`;
+  document.getElementById('actionsBlock').style.display = 'none';
+
+  document.getElementById('tokenStatusPill').textContent = 'Opened';
+  document.getElementById('tokenStatusPill').className = 'status-pill pill-opened';
+  clearInterval(expiryTimer);
+  document.getElementById('expiryFill').style.width = '0%';
+
+  addAudit(`Document unlocked by ${currentDoc.name} — token ${currentToken} now expired`, 'green', '76.218.44.102');
+  addAudit(`AI summary generation started`, 'blue', 'ai.amail.io');
+
+  const usedToken = currentToken;
+  currentToken = '';
+
+  // Call Claude AI for summary
+  const prompt = `You are A-mail's AI document assistant. A recipient just opened a secure document. Analyze it and provide:
+
+1. A clear 2-3 sentence plain-English summary of what this document is and what it means for the recipient
+2. Exactly 3 specific action items the recipient needs to take
+
+Document type: ${currentDoc.docType}
+Sender: ${sender.name}
+Recipient: ${currentDoc.name}
+${currentDoc.hint ? 'Additional context: ' + currentDoc.hint : ''}
+
+Document content:
+${docContent}
+
+Respond in EXACTLY this format:
+SUMMARY: [2-3 sentence plain English summary]
+ACTION1: [specific action item 1]
+ACTION2: [specific action item 2]
+ACTION3: [specific action item 3]`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+
+    const get = (pat) => { const m = text.match(pat); return m ? m[1].trim() : null; };
+    const summary = get(/SUMMARY:\s*(.+?)(?=ACTION1:|$)/s) || 'Document delivered successfully via A-mail.';
+    const a1 = get(/ACTION1:\s*(.+?)(?=ACTION2:|$)/s) || 'Review the document carefully';
+    const a2 = get(/ACTION2:\s*(.+?)(?=ACTION3:|$)/s) || 'Contact sender if you have questions';
+    const a3 = get(/ACTION3:\s*(.+?)$/s) || 'Keep this document for your records';
+
+    document.getElementById('aiBlockText').textContent = summary;
+    document.getElementById('actionsList').innerHTML = [a1, a2, a3].map((a, i) =>
+      `<div class="action-row"><div class="action-num">${i+1}.</div><div class="action-txt">${a}</div></div>`
+    ).join('');
+    document.getElementById('actionsBlock').style.display = 'block';
+    addAudit(`AI summary generated and delivered to ${currentDoc.name}`, 'blue', 'ai.amail.io');
+    addAudit(`Delivery confirmation sent to ${sender.name}`, 'green', 'smtp.amail.io');
+
+  } catch(e) {
+    document.getElementById('aiBlockText').textContent = 'AI summary unavailable — please review the document below. (' + e.message + ')';
+  }
+}
+
+renderAudit();
+</script>
+</body>
+</html>
