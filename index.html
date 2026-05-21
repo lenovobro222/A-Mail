@@ -257,6 +257,22 @@ header{background:var(--ink);padding:0 2rem;display:flex;align-items:center;just
           <div class="actions-label">Action Items</div>
           <div id="actionsList"></div>
         </div>
+        <div id="fileSection" style="display:none;margin-bottom:16px;">
+          <div style="background:#f5f3ee;border:2px solid #1a1a16;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:22px;" id="fileIcon">📄</span>
+              <div>
+                <div style="font-size:13px;font-weight:500;" id="fileNameDisplay">document.pdf</div>
+                <div style="font-size:11px;color:#888;">Secure document — token verified</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="viewFile()" style="padding:8px 14px;background:#1a3a6b;color:white;border:none;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;">View</button>
+              <button onclick="downloadFile()" style="padding:8px 14px;background:#1a1a16;color:#f5f3ee;border:none;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;">Download</button>
+            </div>
+          </div>
+          <div id="filePreview" style="display:none;margin-top:8px;border:1px solid #d4d0c4;"></div>
+        </div>
         <div class="doc-letter" id="docLetter"></div>
       </div>
       <div class="doc-footer-bar">
@@ -310,7 +326,51 @@ function getSender(docType) {
 
 function addAudit(event, type, ip) {
   auditLog.unshift({ event, type, ip, time: new Date().toLocaleTimeString(), date: new Date().toLocaleDateString() });
-  renderAudit();
+  let currentFileUrl = null;
+let currentFileName = null;
+let currentFileType = null;
+
+function getFileIcon(fileType) {
+  if (!fileType) return '📄';
+  if (fileType.includes('pdf')) return '📋';
+  if (fileType.includes('image')) return '🖼️';
+  if (fileType.includes('word') || fileType.includes('document')) return '📝';
+  if (fileType.includes('sheet') || fileType.includes('excel')) return '📊';
+  if (fileType.includes('presentation') || fileType.includes('powerpoint')) return '📊';
+  return '📄';
+}
+
+function viewFile() {
+  if (!currentFileUrl) return;
+  const preview = document.getElementById('filePreview');
+  if (preview.style.display === 'none') {
+    if (currentFileType && currentFileType.includes('pdf')) {
+      preview.innerHTML = '<iframe src="' + currentFileUrl + '" width="100%" height="600px" style="border:none;"></iframe>';
+    } else if (currentFileType && currentFileType.includes('image')) {
+      preview.innerHTML = '<img src="' + currentFileUrl + '" style="max-width:100%;display:block;"/>';
+    } else {
+      window.open(currentFileUrl, '_blank');
+      return;
+    }
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  }
+}
+
+function downloadFile() {
+  if (!currentFileUrl) return;
+  const a = document.createElement('a');
+  a.href = currentFileUrl;
+  a.download = currentFileName || 'document';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+renderAudit();
 }
 
 function renderAudit() {
@@ -339,6 +399,7 @@ async function sendDocument() {
   const expiryHours = parseInt(document.getElementById('expiry').value);
   const docContent = document.getElementById('docContent').value.trim();
   const sender = getSender(docType);
+  const fileInput = document.getElementById('fileInput');
 
   if (!recipientName || !recipientEmail) {
     alert('Please enter recipient name and email.');
@@ -350,17 +411,18 @@ async function sendDocument() {
   btn.textContent = 'Sending...';
 
   try {
+    const formData = new FormData();
+    formData.append('recipientName', recipientName);
+    formData.append('recipientEmail', recipientEmail);
+    formData.append('docType', docType);
+    formData.append('senderName', sender.name);
+    formData.append('docContent', docContent || `${docType} for ${recipientName}`);
+    formData.append('expiryHours', expiryHours);
+    if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
+
     const res = await fetch(`${BACKEND}/send`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipientName,
-        recipientEmail,
-        docType,
-        senderName: sender.name,
-        docContent: docContent || `${docType} for ${recipientName}`,
-        expiryHours
-      })
+      body: formData
     });
 
     const data = await res.json();
@@ -436,8 +498,20 @@ async function tryUnlock() {
     document.getElementById('docSenderMark').textContent = sender.mark;
     document.getElementById('docSenderName').textContent = data.senderName;
     document.getElementById('docSenderType').textContent = data.docType + ' · Delivered via A-mail';
-    document.getElementById('docLetter').textContent = data.docContent;
+    document.getElementById('docLetter').textContent = data.docContent || '';
     document.getElementById('docRevealed').className = 'doc-revealed show';
+
+    // Handle file
+    if (data.fileUrl && data.fileName) {
+      currentFileUrl = data.fileUrl;
+      currentFileName = data.fileName;
+      currentFileType = data.fileType;
+      document.getElementById('fileNameDisplay').textContent = data.fileName;
+      document.getElementById('fileIcon').textContent = getFileIcon(data.fileType);
+      document.getElementById('fileSection').style.display = 'block';
+    } else {
+      document.getElementById('fileSection').style.display = 'none';
+    }
     document.getElementById('aiBlockText').innerHTML = `<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>AI is reading and summarizing your document...</span></div>`;
     document.getElementById('actionsBlock').style.display = 'none';
 
@@ -503,6 +577,50 @@ ACTION3: [specific action item 3]`
 
   btn.disabled = false;
   btn.textContent = 'Unlock →';
+}
+
+let currentFileUrl = null;
+let currentFileName = null;
+let currentFileType = null;
+
+function getFileIcon(fileType) {
+  if (!fileType) return '📄';
+  if (fileType.includes('pdf')) return '📋';
+  if (fileType.includes('image')) return '🖼️';
+  if (fileType.includes('word') || fileType.includes('document')) return '📝';
+  if (fileType.includes('sheet') || fileType.includes('excel')) return '📊';
+  if (fileType.includes('presentation') || fileType.includes('powerpoint')) return '📊';
+  return '📄';
+}
+
+function viewFile() {
+  if (!currentFileUrl) return;
+  const preview = document.getElementById('filePreview');
+  if (preview.style.display === 'none') {
+    if (currentFileType && currentFileType.includes('pdf')) {
+      preview.innerHTML = '<iframe src="' + currentFileUrl + '" width="100%" height="600px" style="border:none;"></iframe>';
+    } else if (currentFileType && currentFileType.includes('image')) {
+      preview.innerHTML = '<img src="' + currentFileUrl + '" style="max-width:100%;display:block;"/>';
+    } else {
+      window.open(currentFileUrl, '_blank');
+      return;
+    }
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  }
+}
+
+function downloadFile() {
+  if (!currentFileUrl) return;
+  const a = document.createElement('a');
+  a.href = currentFileUrl;
+  a.download = currentFileName || 'document';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 renderAudit();
